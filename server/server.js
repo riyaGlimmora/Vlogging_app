@@ -17,3 +17,10 @@ startServer().catch((err) => {
   process.stderr.write(`Failed to start server: ${err.message}\n`);
   process.exit(1);
 });
+
+app.get("/", (req, res) => {
+  res.status(200).json({
+    success: true,
+    message: "Glimmora Vlogging API is running"
+  });
+});
