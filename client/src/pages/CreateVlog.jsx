@@ -13,7 +13,7 @@ const CreateVlog = () => {
     setError(null);
     try {
       const { data } = await api.post('/vlogs', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
+        timeout: 300000,
       });
       navigate(`/vlogs/${data.data._id}`);
     } catch (err) {

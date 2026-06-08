@@ -13,6 +13,7 @@ const startServer = async () => {
   });
 };
 
-startServer().catch(() => {
+startServer().catch((err) => {
+  process.stderr.write(`Failed to start server: ${err.message}\n`);
   process.exit(1);
 });

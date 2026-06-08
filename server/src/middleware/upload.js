@@ -33,7 +33,17 @@ const upload = multer({
   },
 });
 
-export const uploadVlogMedia = upload.fields([
-  { name: 'video', maxCount: 1 },
-  { name: 'thumbnail', maxCount: 1 },
-]);
+export const uploadVlogMedia = (req, res, next) => {
+  upload.fields([
+    { name: 'video', maxCount: 1 },
+    { name: 'thumbnail', maxCount: 1 },
+  ])(req, res, (err) => {
+    if (err) {
+      if (err.code === 'LIMIT_FILE_SIZE') {
+        return next(new ApiError(400, 'File too large. Maximum size is 100MB.'));
+      }
+      return next(err instanceof ApiError ? err : new ApiError(400, err.message));
+    }
+    next();
+  });
+};
