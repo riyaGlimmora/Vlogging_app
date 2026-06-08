@@ -11,11 +11,12 @@ import { protect } from '../middleware/auth.js';
 import { uploadVlogMedia, requireCreateVlogFiles } from '../middleware/upload.js';
 import { createVlogValidator, updateVlogValidator } from '../validators/vlogValidator.js';
 import validate from '../middleware/validate.js';
+import { optionalAuth } from '../middleware/optionalAuth.js';
 
 const router = Router();
 
 router.get('/', getVlogs);
-router.get('/:id', getVlog);
+router.get('/:id', optionalAuth, getVlog);
 router.post('/', protect, uploadVlogMedia, requireCreateVlogFiles, createVlogValidator, validate, createVlog);
 router.put('/:id', protect, uploadVlogMedia, updateVlogValidator, validate, updateVlog);
 router.delete('/:id', protect, deleteVlog);

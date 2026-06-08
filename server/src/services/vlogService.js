@@ -29,15 +29,23 @@ export const getAllVlogs = async (page = 1) => {
   };
 };
 
-export const getVlogById = async (id) => {
-  const vlog = await Vlog.findByIdAndUpdate(
-    id,
-    { $inc: { viewCount: 1 } },
-    { new: true }
-  ).populate(populateAuthor);
+export const getVlogById = async (id, userId) => {
+  const vlog = await Vlog.findById(id).populate(populateAuthor);
 
   if (!vlog) {
     throw new ApiError(404, 'Vlog not found');
+  }
+
+  if (userId) {
+    const alreadyViewed = vlog.viewedBy.some(
+      (viewerId) => viewerId.toString() === userId.toString()
+    );
+
+    if (!alreadyViewed) {
+      vlog.viewCount += 1;
+      vlog.viewedBy.push(userId);
+      await vlog.save();
+    }
   }
 
   return vlog;
