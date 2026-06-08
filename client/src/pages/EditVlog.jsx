@@ -65,6 +65,9 @@ const EditVlog = () => {
         initialValues={{
           title: vlog.title,
           description: vlog.description,
+          mediaType: vlog.mediaType || 'video',
+          videoUrl: vlog.videoUrl,
+          imageUrl: vlog.imageUrl,
           thumbnailUrl: vlog.thumbnailUrl,
         }}
         onSubmit={handleSubmit}

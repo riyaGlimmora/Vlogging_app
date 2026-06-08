@@ -1,5 +1,6 @@
 import { cloudinary, configureCloudinary } from '../config/cloudinary.js';
 import ApiError from '../utils/ApiError.js';
+import { detectMediaType } from '../utils/mediaTypes.js';
 
 const uploadFromBuffer = (buffer, options) =>
   new Promise((resolve, reject) => {
@@ -13,16 +14,26 @@ const uploadFromBuffer = (buffer, options) =>
     stream.end(buffer);
   });
 
-export const uploadVideo = async (file) => {
+export const uploadMediaFile = async (file) => {
   configureCloudinary();
   if (!file) {
-    throw new ApiError(400, 'Video file is required');
+    throw new ApiError(400, 'Image or video file is required');
   }
+
+  const mediaType = detectMediaType(file);
+  if (!mediaType) {
+    throw new ApiError(400, 'File must be a supported image or video format');
+  }
+
   const result = await uploadFromBuffer(file.buffer, {
-    resource_type: 'video',
-    folder: 'vlogging-app/videos',
+    resource_type: mediaType === 'video' ? 'video' : 'image',
+    folder: mediaType === 'video' ? 'vlogging-app/videos' : 'vlogging-app/images',
   });
-  return result.secure_url;
+
+  return {
+    url: result.secure_url,
+    mediaType,
+  };
 };
 
 export const uploadThumbnail = async (file) => {

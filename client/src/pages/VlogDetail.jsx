@@ -64,18 +64,27 @@ const VlogDetail = () => {
 
   const authorName = vlog.author?.name || 'Unknown';
   const likeCount = vlog.likes?.length ?? 0;
+  const isImage = vlog.mediaType === 'image';
 
   return (
     <article className="mx-auto max-w-4xl">
       <div className="overflow-hidden rounded-xl bg-black shadow-lg">
-        <video
-          src={vlog.videoUrl}
-          controls
-          poster={vlog.thumbnailUrl}
-          className="aspect-video w-full"
-        >
-          <track kind="captions" />
-        </video>
+        {isImage ? (
+          <img
+            src={vlog.imageUrl || vlog.thumbnailUrl}
+            alt={vlog.title}
+            className="w-full object-contain"
+          />
+        ) : (
+          <video
+            src={vlog.videoUrl}
+            controls
+            poster={vlog.thumbnailUrl}
+            className="aspect-video w-full"
+          >
+            <track kind="captions" />
+          </video>
+        )}
       </div>
 
       <div className="mt-6">

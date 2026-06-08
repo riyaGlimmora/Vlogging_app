@@ -4,6 +4,8 @@ import { EyeIcon, HeartIcon } from './Icons';
 const VlogCard = ({ vlog }) => {
   const authorName = vlog.author?.name || 'Unknown';
   const likeCount = vlog.likes?.length ?? 0;
+  const isImage = vlog.mediaType === 'image';
+  const cardImageSrc = isImage ? vlog.imageUrl || vlog.thumbnailUrl : vlog.thumbnailUrl;
 
   return (
     <Link
@@ -12,10 +14,20 @@ const VlogCard = ({ vlog }) => {
     >
       <div className="relative aspect-video overflow-hidden bg-gray-100">
         <img
-          src={vlog.thumbnailUrl}
+          src={cardImageSrc}
           alt={vlog.title}
           className="h-full w-full object-cover transition group-hover:scale-105"
         />
+        {!isImage && vlog.videoUrl && (
+          <span className="absolute bottom-2 right-2 rounded bg-black/70 px-2 py-0.5 text-xs text-white">
+            Video
+          </span>
+        )}
+        {isImage && (
+          <span className="absolute bottom-2 right-2 rounded bg-black/70 px-2 py-0.5 text-xs text-white">
+            Image
+          </span>
+        )}
       </div>
       <div className="p-4">
         <h3 className="line-clamp-2 font-semibold text-gray-900 group-hover:text-brand-600">

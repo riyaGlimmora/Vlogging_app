@@ -14,9 +14,16 @@ const vlogSchema = new mongoose.Schema(
       trim: true,
       maxlength: [5000, 'Description cannot exceed 5000 characters'],
     },
+    mediaType: {
+      type: String,
+      enum: ['video', 'image'],
+      default: 'video',
+    },
     videoUrl: {
       type: String,
-      required: [true, 'Video URL is required'],
+    },
+    imageUrl: {
+      type: String,
     },
     thumbnailUrl: {
       type: String,
@@ -40,6 +47,16 @@ const vlogSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+vlogSchema.pre('validate', function validateMediaUrls(next) {
+  if (this.mediaType === 'video' && !this.videoUrl) {
+    this.invalidate('videoUrl', 'Video URL is required for video vlogs');
+  }
+  if (this.mediaType === 'image' && !this.imageUrl) {
+    this.invalidate('imageUrl', 'Image URL is required for image vlogs');
+  }
+  next();
+});
 
 const Vlog = mongoose.model('Vlog', vlogSchema);
 

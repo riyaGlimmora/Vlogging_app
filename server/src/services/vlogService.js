@@ -1,6 +1,6 @@
 import Vlog from '../models/Vlog.js';
 import ApiError from '../utils/ApiError.js';
-import { uploadVideo, uploadThumbnail, deleteFromCloudinary } from './cloudinaryService.js';
+import { uploadMediaFile, uploadThumbnail, deleteFromCloudinary } from './cloudinaryService.js';
 
 const populateAuthor = { path: 'author', select: 'name email' };
 
@@ -45,19 +45,47 @@ export const getVlogById = async (id) => {
 
 const getUploadedFile = (files, field) => files?.[field]?.[0] ?? null;
 
+const removeVlogMedia = async (vlog) => {
+  const tasks = [];
+  if (vlog.videoUrl) {
+    tasks.push(deleteFromCloudinary(vlog.videoUrl, 'video'));
+  }
+  if (vlog.imageUrl) {
+    tasks.push(deleteFromCloudinary(vlog.imageUrl, 'image'));
+  }
+  if (vlog.thumbnailUrl && vlog.thumbnailUrl !== vlog.imageUrl) {
+    tasks.push(deleteFromCloudinary(vlog.thumbnailUrl, 'image'));
+  }
+  await Promise.all(tasks);
+};
+
 export const createVlog = async (userId, body, files) => {
-  const videoFile = getUploadedFile(files, 'video');
+  const mediaFile = getUploadedFile(files, 'media');
   const thumbnailFile = getUploadedFile(files, 'thumbnail');
 
-  const [videoUrl, thumbnailUrl] = await Promise.all([
-    uploadVideo(videoFile),
-    uploadThumbnail(thumbnailFile),
-  ]);
+  const { url: mediaUrl, mediaType } = await uploadMediaFile(mediaFile);
+
+  let videoUrl;
+  let imageUrl;
+  let thumbnailUrl;
+
+  if (mediaType === 'video') {
+    if (!thumbnailFile) {
+      throw new ApiError(400, 'Thumbnail is required when uploading a video');
+    }
+    videoUrl = mediaUrl;
+    thumbnailUrl = await uploadThumbnail(thumbnailFile);
+  } else {
+    imageUrl = mediaUrl;
+    thumbnailUrl = mediaUrl;
+  }
 
   const vlog = await Vlog.create({
     title: body.title,
     description: body.description,
+    mediaType,
     videoUrl,
+    imageUrl,
     thumbnailUrl,
     author: userId,
   });
@@ -78,15 +106,36 @@ export const updateVlog = async (id, userId, body, files) => {
   if (body.title) vlog.title = body.title;
   if (body.description) vlog.description = body.description;
 
-  const videoFile = getUploadedFile(files, 'video');
+  const mediaFile = getUploadedFile(files, 'media');
   const thumbnailFile = getUploadedFile(files, 'thumbnail');
 
-  if (videoFile) {
-    await deleteFromCloudinary(vlog.videoUrl, 'video');
-    vlog.videoUrl = await uploadVideo(videoFile);
-  }
+  if (mediaFile) {
+    if (vlog.videoUrl) await deleteFromCloudinary(vlog.videoUrl, 'video');
+    if (vlog.imageUrl) await deleteFromCloudinary(vlog.imageUrl, 'image');
+    if (vlog.thumbnailUrl && vlog.thumbnailUrl !== vlog.imageUrl) {
+      await deleteFromCloudinary(vlog.thumbnailUrl, 'image');
+    }
 
-  if (thumbnailFile) {
+    const { url: mediaUrl, mediaType } = await uploadMediaFile(mediaFile);
+    vlog.mediaType = mediaType;
+
+    if (mediaType === 'video') {
+      vlog.videoUrl = mediaUrl;
+      vlog.imageUrl = undefined;
+      if (thumbnailFile) {
+        vlog.thumbnailUrl = await uploadThumbnail(thumbnailFile);
+      } else if (!vlog.thumbnailUrl) {
+        throw new ApiError(400, 'Thumbnail is required when uploading a video');
+      }
+    } else {
+      vlog.imageUrl = mediaUrl;
+      vlog.videoUrl = undefined;
+      vlog.thumbnailUrl = mediaUrl;
+    }
+  } else if (thumbnailFile) {
+    if (vlog.mediaType !== 'video') {
+      throw new ApiError(400, 'Thumbnail can only be updated for video vlogs');
+    }
     await deleteFromCloudinary(vlog.thumbnailUrl, 'image');
     vlog.thumbnailUrl = await uploadThumbnail(thumbnailFile);
   }
@@ -105,11 +154,7 @@ export const deleteVlog = async (id, userId) => {
     throw new ApiError(403, 'You are not authorized to delete this vlog');
   }
 
-  await Promise.all([
-    deleteFromCloudinary(vlog.videoUrl, 'video'),
-    deleteFromCloudinary(vlog.thumbnailUrl, 'image'),
-  ]);
-
+  await removeVlogMedia(vlog);
   await vlog.deleteOne();
 };
 
