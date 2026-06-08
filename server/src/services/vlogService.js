@@ -43,9 +43,11 @@ export const getVlogById = async (id) => {
   return vlog;
 };
 
+const getUploadedFile = (files, field) => files?.[field]?.[0] ?? null;
+
 export const createVlog = async (userId, body, files) => {
-  const videoFile = files?.video?.[0];
-  const thumbnailFile = files?.thumbnail?.[0];
+  const videoFile = getUploadedFile(files, 'video');
+  const thumbnailFile = getUploadedFile(files, 'thumbnail');
 
   const [videoUrl, thumbnailUrl] = await Promise.all([
     uploadVideo(videoFile),
@@ -76,8 +78,8 @@ export const updateVlog = async (id, userId, body, files) => {
   if (body.title) vlog.title = body.title;
   if (body.description) vlog.description = body.description;
 
-  const videoFile = files?.video?.[0];
-  const thumbnailFile = files?.thumbnail?.[0];
+  const videoFile = getUploadedFile(files, 'video');
+  const thumbnailFile = getUploadedFile(files, 'thumbnail');
 
   if (videoFile) {
     await deleteFromCloudinary(vlog.videoUrl, 'video');
